@@ -1,50 +1,13 @@
-#include <MatrixMath.h>
+#include "Arduino.h"
+#include "LevMar.h"
 
 /********************************************************************/
 /*
- * Global Variables
+ * LevMar Constructor - all that is needed at this point is microphone position
+ * and identity matrix
  */
-
-// 2D Microphone Array
-#define N  (2)
-float c = 34.3;
-uint8_t mdist = 20;
-float m1[N]; // vector of mic 1
-float m2[N]; // vector of mic 2
-float m3[N]; // vector of mic 3
-
-// LevMar Parameters
-uint8_t n_iters = 10; // # of iterations for LM
-float lambda= 0.01; // initial damping factor 
-uint8_t updateJ=1; //update?
-
-//LevMar Variables
-float state_est[N] = {1,1}; //state estimate (maybe can be optimized)
-float state_lm[N]; //Lev_Marstate estimate
-float dp[N]; //step
-float y_est [3]; //y estimate, derived from state_est
-float y_est_lm [3]; //y estimate, derived from LevMar
-float d[3]; //Residual
-float d_lm[3]; //Residual after LevMar step
-float e; //Error (residual^2)
-float e_lm; //Error (residual^2) after LevMar step
-float J [3][2]; //Jacobian
-float J_transpose [2][3]; //Transpose of Jacobian
-float temp[2]; //temp matrix to help J'*d
-float H[2][2]; //Hessian
-float H_lm[2][2];
-float res1[N]; //result vector for Jacobian math
-float res2[N]; //result vector for Jacobian math
-float res3[N]; //result vector for Jacobian math
-float eye[N][N];
-
-/********************************************************************/
-/*
- * Setup
- */
-void setup() {
-Serial.begin(9600);      // open the serial port at 9600 bps:  
-
+LevMar::LevMar()
+{
 // 2D Microphone Array 
 m1[0] = 0;
 m1[1] = 0;
@@ -59,12 +22,11 @@ eye[0][1] = 0;
 eye[1][0] = 0;
 eye[1][1] = 1;
 }
-
 /********************************************************************/
 /*
  * Norm Function
  */
-float norm(float* vector, uint8_t vector_size) {
+float LevMar::norm(float* vector, uint8_t vector_size) {
   float total = 0;
   for (int i = 0; i < vector_size; i++) {
     total += (vector[i]*vector[i]);
@@ -76,7 +38,8 @@ float norm(float* vector, uint8_t vector_size) {
 /*
  * Levenberg-Marquardt Algorithm
  */
-void LevMar(float* measurements) {
+float* LevMar::Run(float* measurements) {
+
 for (uint8_t it = 1; it <= n_iters; it++) {
   Serial.println("starting levmar");
   // if updated, calculate new parameters
@@ -108,7 +71,8 @@ for (uint8_t it = 1; it <= n_iters; it++) {
     //if the first iteration, compute the total error    
     if (it==1) { 
       //slight modification to error calculation using abs() to save memory and improve precision
-      e = (d[0]*d[0] + d[1]*d[1] + d[2]*d[2]);
+      //e = (d[0]*d[0] + d[1]*d[1] + d[2]*d[2]);
+	  e = (abs(d[0]) + abs(d[1]) + abs(d[2]));
       Serial.print("e = ");
       Serial.println(e,7);
     }
@@ -141,7 +105,8 @@ for (uint8_t it = 1; it <= n_iters; it++) {
   y_est_lm[2] = (1/c) * (norm(res1,N) - norm(res3,N));
   
   Matrix.Subtract((float*)measurements,(float*)y_est_lm,3,1,d_lm);
-  e_lm = (d_lm[0]*d_lm[0] + d_lm[1]*d_lm[1] + d_lm[2]*d_lm[2]);
+  //e_lm = (d_lm[0]*d_lm[0] + d_lm[1]*d_lm[1] + d_lm[2]*d_lm[2]);
+  e_lm = abs(d_lm[0]) + abs(d_lm[1]) + abs(d_lm[2]);
   Serial.print("e_lm = ");
   Serial.println(e_lm,7);
   Matrix.Print((float*)state_est,2,1,"state_est");
@@ -163,15 +128,7 @@ for (uint8_t it = 1; it <= n_iters; it++) {
     lambda *= 10;
   }
 }
-return;
+return state_est;
 }
 /********************************************************************/
 
-void loop() {
-
-float measurements[3] = {-0.577883,0.117166,-0.460717};
-
-LevMar(measurements);
-Matrix.Print((float*)state_est,2,1,"LevMar State Estimation");
-  delay(100000);
-}
