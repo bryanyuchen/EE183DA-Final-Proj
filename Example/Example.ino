@@ -1,6 +1,6 @@
 #include <LevMar.h>
 #include <MatrixMath.h>
-LevMar levmar;
+LevMar levmar(20.0f);
 
 void setup() {
 Serial.begin(9600); 

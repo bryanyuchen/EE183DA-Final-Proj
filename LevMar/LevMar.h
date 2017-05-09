@@ -11,7 +11,7 @@
 class LevMar
 {
 	public:
-		LevMar();
+		LevMar(float mdist);
 		float norm(float* vector, uint8_t vector_size);
 		float* Run(float* measurements);
 		
@@ -23,7 +23,7 @@ class LevMar
 // 2D Microphone Array
 #define N  (2)
 float c = 34.3;
-uint8_t mdist = 20;
+//uint8_t mdist = 20;
 float m1[N]; // vector of mic 1
 float m2[N]; // vector of mic 2
 float m3[N]; // vector of mic 3

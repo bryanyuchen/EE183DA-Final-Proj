@@ -6,7 +6,7 @@
  * LevMar Constructor - all that is needed at this point is microphone position
  * and identity matrix
  */
-LevMar::LevMar()
+LevMar::LevMar(float mdist)
 {
 // 2D Microphone Array 
 m1[0] = 0;
