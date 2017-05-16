@@ -31,10 +31,9 @@ float m3[N]; // vector of mic 3
 // LevMar Parameters
 uint8_t n_iters = 10; // # of iterations for LM
 float lambda= 0.01; // initial damping factor 
-uint8_t updateJ=1; //update?
 
 //LevMar Variables
-float state_est[N] = {1,1}; //state estimate (maybe can be optimized)
+float state_est[N]; //state estimate (maybe can be optimized)
 float state_lm[N]; //Lev_Marstate estimate
 float dp[N]; //step
 float y_est [3]; //y estimate, derived from state_est

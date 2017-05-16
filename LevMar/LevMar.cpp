@@ -39,9 +39,10 @@ float LevMar::norm(float* vector, uint8_t vector_size) {
  * Levenberg-Marquardt Algorithm
  */
 float* LevMar::Run(float* measurements) {
-
+uint8_t updateJ=1; //update?
+state_est[0] = 1;
+state_est[1] = 1;
 for (uint8_t it = 1; it <= n_iters; it++) {
-  Serial.println("starting levmar");
   // if updated, calculate new parameters
   if (updateJ == 1) {
     // Evaluate the Jacobian matrix at the current parameters 
@@ -107,23 +108,23 @@ for (uint8_t it = 1; it <= n_iters; it++) {
   Matrix.Subtract((float*)measurements,(float*)y_est_lm,3,1,d_lm);
   //e_lm = (d_lm[0]*d_lm[0] + d_lm[1]*d_lm[1] + d_lm[2]*d_lm[2]);
   e_lm = abs(d_lm[0]) + abs(d_lm[1]) + abs(d_lm[2]);
-  Serial.print("e_lm = ");
-  Serial.println(e_lm,7);
-  Matrix.Print((float*)state_est,2,1,"state_est");
+  //Serial.print("e_lm = ");
+  //Serial.println(e_lm,7);
+  //Matrix.Print((float*)state_est,2,1,"state_est");
   
   //check total distance error
   if (e_lm < e) { 
-   Serial.println("update step");
+   //Serial.println("update step");
    lambda /= 10;
    state_est[0] = state_lm[0];
    state_est[1] = state_lm[1];
    e = e_lm;
-   Serial.print("error: ");
-   Serial.println(e,7);
+   //Serial.print("error: ");
+   //Serial.println(e,7);
    updateJ = 1;
   }
   else {
-    Serial.println("increase damping");
+    //Serial.println("increase damping");
     updateJ = 0;
     lambda *= 10;
   }
