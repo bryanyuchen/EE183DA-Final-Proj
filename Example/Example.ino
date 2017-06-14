@@ -1,51 +1,57 @@
 #include <Kalmf.h>
-#include <LevMar.h>
+#include <LevMar3D.h>
 #include <MatrixMath.h>
-LevMar levmar(20.0f);
+LevMar3D levmar;
 Kalmf kalmf;
 
-//measurement array
-#define NUM_MEASUREMENTS (20)
-float measurements[NUM_MEASUREMENTS][3] =
-    {
-        {-0.557700,   0.028600,  -0.543400},
-        {-0.557700,  -0.028600,  -0.543400},
-        {-0.572000,   0.028600,  -0.557700},
-        {-0.572000,   0.028600,  -0.543400},
-        {-0.529100,   0.028600,  -0.529100},
-        {-0.557700,   0.028600,  -0.529100},
-        {-0.614900,   0.028600,  -0.529100},
-        {-0.543400,  -0.028600,  -0.572000},
-        {-0.557700,  -0.042900,  -0.572000},
-        {-0.557700,  -0.028600,  -0.557700},
-        {-0.529100,  -0.042900,  -0.543400},
-        {-0.572000,  -0.057200,  -0.572000},
-        {-0.543400,  -0.042900,  -0.557700},
-        {-0.543400,   0.028600,  -0.529100},
-        {-0.529100,  -0.042900,  -0.557700},
-        {-0.514800,  -0.042900,  -0.572000},
-        {-0.543400,  -0.042900,  -0.557700},
-        {-0.529100,  -0.057200,  -0.572000},
-        {-0.543400,  -0.028600,  -0.557700},
-        {-0.529100,   0.028600,  -0.529100}
-    };
-    
 void setup() {
  Serial.begin(9600); 
 }
+float norm(float* vector, uint8_t vector_size) {
+  float total = 0;
+  for (int i = 0; i < vector_size; i++) {
+    total += (vector[i]*vector[i]);
+  }
+  return sqrt(total);
+}
+
+float* Y_EST(float* state) {
+  //microphone variables
+  float c = 34.3;
+  float m1[3] = {0,11.62f,0};
+  float m2[3] = {-10.0f,-5.7f,0};
+  float m3[3] = {10.0f,-5.7f,0};
+  float m4[3] = {0,0,16.28f};
+
+  //y estimate procedure
+  float y_estimate[4];
+  float y_est_temp1[N];
+  float y_est_temp2[N];
+  float y_est_temp3[N];
+  float y_est_temp4[N];
+  Matrix.Subtract((float*)state,(float*)m1,3,1,(float*)y_est_temp1);
+  Matrix.Subtract((float*)state,(float*)m2,3,1,(float*)y_est_temp2);
+  Matrix.Subtract((float*)state,(float*)m3,3,1,(float*)y_est_temp3);
+  Matrix.Subtract((float*)state,(float*)m4,3,1,(float*)y_est_temp4);
+
+  y_estimate[0] = (1/c) * (norm(y_est_temp1,3) - norm(y_est_temp2,3));
+  y_estimate[1] = (1/c) * (norm(y_est_temp2,3) - norm(y_est_temp3,3));
+  y_estimate[2] = (1/c) * (norm(y_est_temp3,3) - norm(y_est_temp4,3));
+  y_estimate[3] = (1/c) * (norm(y_est_temp1,3) - norm(y_est_temp4,3));
+  Matrix.Print((float*)y_estimate,4,1,"y_est");
+  //OPTIONAL add noise here
+  float var = 0.001;
+
+  return y_estimate;
+}
 
 void loop() {
-//float measurements[3] = {-0.577883,0.117166,-0.460717}; // ideal measurement
-
-for (int i = 3; i < NUM_MEASUREMENTS; i++) {
-//solves nonlinear LS problem
-float* state_est = levmar.Run(measurements[i]);
-Matrix.Print((float*)state_est,2,1,"LevMar State Estimation");
-
-//estimates state evolution based on levmar solution and state memory
-float* Kalmf_return_state = kalmf.Run(state_est);
-Matrix.Print((float*)Kalmf_return_state,2,1,"Kalmf State Estimation"); 
-}
+//float measurements[4] = {-0.4592,0.2977,0.1331,-0.0283}; // ideal measurement
+float state_set[3] = {25.0f, 25.0f, 25.0f};
+float* measurements = Y_EST(state_set);
+Matrix.Print((float*)state_set,3,1,"state_set");
+float* state_estimate = levmar.Run(measurements);
+Matrix.Print((float*)state_estimate,3,1,"LevMar State Estimation");
 delay(100000);
 }
 
